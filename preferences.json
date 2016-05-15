@@ -1,0 +1,16 @@
+{
+  "type": "object",
+  "properties": {
+    "useRGB": {
+      "type": "boolean",
+      "title": "Use RGB instead of Hexadecimal",
+      "default": false
+    },
+    "prefix": {
+      "type": "string",
+      "title": "Hexadecimal Prefix",
+      "enum": ["#", "0x"],
+      "default": "#"
+    }
+  }
+}
