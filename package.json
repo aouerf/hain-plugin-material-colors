@@ -1,6 +1,6 @@
 {
   "name": "hain-plugin-material-colors",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "A Hain plugin for finding colors from the Material Design color palette.",
   "main": "index.js",
   "author": "Ahmad Ouerfelli <a.ouerf@gmail.com>",
@@ -14,7 +14,7 @@
   },
   "homepage": "https://github.com/aouerfelli/hain-plugin-material-colors#readme",
   "keywords": [
-    "hain0"
+    "hain-0.3.0"
   ],
   "hain": {
     "prefix": "/material",

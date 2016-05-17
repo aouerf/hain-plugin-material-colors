@@ -10,7 +10,8 @@
       "type": "string",
       "title": "Hexadecimal Prefix",
       "enum": ["#", "0x"],
-      "default": "#"
+      "default": "#",
+      "errorMessages": "The only valid options are # or 0x"
     }
   }
 }
