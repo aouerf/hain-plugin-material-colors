@@ -1,6 +1,8 @@
 # hain-plugin-material-colors
 A [Hain](https://github.com/appetizermonster/hain) plugin for finding colors from the Material Design color palette.
 
+![](screenshots.gif)
+
 ## Install
 
 - To install, run this command in the Hain input text area:
