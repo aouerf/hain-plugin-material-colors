@@ -1,100 +1,104 @@
-'use strict';
+const colors = require('./colors.js');
+const packageName = require('./package.json').name;
 
-function toTitleCase(str) {
-  return str.split('-')
-    .map((s) => s.charAt(0).toUpperCase() + s.substring(1).toLowerCase())
+const colorSeparator = '_';
+const shadePattern = /^a?[1-9]{0,1}0{0,2}$/;
+const emptyQuery = {
+  preferences: {
+    id: 'preferences',
+    title: 'Open Preferences',
+    desc: 'Change how the color values are formatted and displayed',
+    icon: '#fa fa-cog',
+  },
+  website: {
+    id: 'website',
+    title: 'View the Material Color Guidelines',
+    desc: 'https://material.io/guidelines/style/color.html',
+    icon: '#fa fa-globe',
+  },
+};
+
+const toTitleCase = str =>
+  str.split(colorSeparator)
+    .map(s => s.charAt(0).toUpperCase() + s.substring(1).toLowerCase())
     .join(' ');
-}
 
-function hasWords(arr1, arr2) {
-  if (arr1.length < arr2.length) {
-    return false;
-  }
-  for (let w = 0; w < arr2.length; w++) {
-    if (!arr1.some((element) => element.startsWith(arr2[w]))) {
-      return false;
-    }
-  }
-  return true;
-}
+const hasAllStartingWith = (arr1, arr2) =>
+  arr1.length >= arr2.length && arr2.every(w2 => arr1.some(w1 => w1.startsWith(w2)));
 
 module.exports = (pluginContext) => {
+  const { app, shell, preferences, toast, clipboard } = pluginContext;
 
-  const COLORS = require('./colors.js');
-  const regexShade = /(^[1-9]0{0,2}$)|(^a([1|2|4|7]0{0,2})?$)/
+  let colorType;
+  let colorPrefix;
 
-  const app = pluginContext.app;
-  const clipboard = pluginContext.clipboard;
-  const shell = pluginContext.shell;
-  const toast = pluginContext.toast;
+  const updatePrefs = (pref) => {
+    colorType = pref.useRgb ? 'rgb' : 'hex';
+    colorPrefix = pref.useRgb ? 'rgb' : pref.prefix;
+  };
 
-  const prefs = pluginContext.preferences.get();
-  const colorType = 'hex';
-  const prefix = prefs.prefix;
-  if (prefs.useRGB) {
-    colorType = prefix = 'rgb';
-  }
+  const startup = () => {
+    updatePrefs(preferences.get());
+    preferences.on('update', updatePrefs);
+  };
 
-  function search(query, res) {
-    let queries = query.trim().toLowerCase();
-    if (!queries.length) {
-      let results = [{
-          id: 'preferences',
-          title: 'Open Preferences',
-          desc: 'Choose between using Hexadecimal or RGB values and set the Hexadecimal prefix',
-          icon: '#fa fa-cog'
-      }, {
-          id: 'website',
-          title: 'View the Material Color Guidelines',
-          desc: 'https://www.google.com/design/spec/style/color.html',
-          icon: '#fa fa-globe'
-      }];
-      return res.add(results);
+  const search = (query, res) => {
+    const queries = query.trim().toLowerCase().split(' ');
+
+    if (queries[0] === '') {
+      return res.add([
+        emptyQuery.preferences,
+        emptyQuery.website,
+      ]);
     }
-    queries = queries.split(' ');
 
-    let queryShade = queries.length > 1 && regexShade.test(queries[queries.length - 1]) ? queries.pop() : undefined;
-    let hues = [];
-    let results = [];
+    const hues = [];
+    const results = [];
+    const queryShade = queries.length > 1 && shadePattern.test(queries[queries.length - 1]) ?
+                       queries.pop().toUpperCase() : '';
 
-    for (let hue in COLORS) {
-      if (hasWords(hue.split('-'), queries)) {
+    Object.keys(colors).forEach((hue) => {
+      if (hasAllStartingWith(hue.split(colorSeparator), queries)) {
         hues.push(hue);
       }
-    }
+    });
 
-    for (let h = 0; h < hues.length; h++) {
-      let hue = hues[h];
-      for (let shade in COLORS[hue]) {
-        let colorVal = prefix + COLORS[hue][shade][colorType];
+    hues.forEach((hue) => {
+      Object.keys(colors[hue]).forEach((shade) => {
+        const colorValue = `${colorPrefix}${colors[hue][shade][colorType]}`;
 
-      if (!queryShade || shade.startsWith(queryShade)) {
+        if (queryShade === '' || shade.includes(queryShade)) {
           results.push({
-            id: hue + shade,
-            payload: colorVal,
-            title: shade.toUpperCase(),
-            desc: colorVal,
-            icon: `http://www.beautycolorcode.com/${COLORS[hue][shade].hex}-48x48.png`,
-            group: toTitleCase(hue)
+            id: `${hue}${shade}`,
+            payload: colorValue,
+            title: shade,
+            desc: colorValue,
+            icon: `http://www.beautycolorcode.com/${colors[hue][shade].hex}-48x48.png`,
+            group: toTitleCase(hue),
           });
         }
-      }
-    }
-    return res.add(results);
-  }
-
-  function execute(id, payload) {
-    if (id === 'preferences') {
-      app.openPreferences('hain-plugin-material-colors');
-    } else if (id === 'website') {
-      shell.openExternal('https://www.google.com/design/spec/style/color.html');
-    } else {
-      clipboard.writeText(payload);
-      clipboard.readText().then((result) => {
-        toast.enqueue(result === payload ? `${result} copied to clipboard` : 'Unable to copy to your clipboard', 1000);
       });
-    }
-  }
+    });
 
-  return { search, execute };
+    return res.add(results);
+  };
+
+  const execute = (id, payload) => {
+    switch (id) {
+      case emptyQuery.preferences.id:
+        app.openPreferences(packageName);
+        break;
+      case emptyQuery.website.id:
+        shell.openExternal(emptyQuery.website.desc);
+        break;
+      default:
+        clipboard.writeText(payload);
+        clipboard.readText().then(result => toast.enqueue(
+            result === payload ? `${result} copied to clipboard` : 'Unable to copy to clipboard',
+            1000));
+        break;
+    }
+  };
+
+  return { startup, search, execute };
 };

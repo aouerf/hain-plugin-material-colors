@@ -1,7 +1,7 @@
 {
   "type": "object",
   "properties": {
-    "useRGB": {
+    "useRgb": {
       "type": "boolean",
       "title": "Use RGB instead of Hexadecimal",
       "default": false

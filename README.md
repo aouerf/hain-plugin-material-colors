@@ -1,5 +1,5 @@
 # hain-plugin-material-colors
-A [Hain](https://github.com/appetizermonster/hain) plugin for finding colors from the Material Design color palette.
+A [Hain](https://github.com/appetizermonster/hain) plugin for finding and copying colors from the Material Design color palette.
 
 ![](screenshots.gif)
 
@@ -13,7 +13,7 @@ A [Hain](https://github.com/appetizermonster/hain) plugin for finding colors fro
 - And then reload the plugins:
 
 ```
-/reload
+/hain reload
 ```
 
 ## Usage
