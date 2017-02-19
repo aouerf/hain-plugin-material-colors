@@ -23,11 +23,19 @@ const toTitleCase = str =>
     .map(s => s.charAt(0).toUpperCase() + s.substring(1).toLowerCase())
     .join(' ');
 
+const splitQuery = query =>
+  query.trim().toLowerCase().split(/\s+/);
+
 const hasAllStartingWith = (arr1, arr2) =>
   arr1.length >= arr2.length && arr2.every(w2 => arr1.some(w1 => w1.startsWith(w2)));
 
+const getColorImage = hex =>
+  `http://www.beautycolorcode.com/${hex}-48x48.png`;
+
 module.exports = (pluginContext) => {
   const { app, shell, preferences, toast, clipboard } = pluginContext;
+
+  // Handle preferences
 
   let colorType;
   let colorPrefix;
@@ -43,8 +51,9 @@ module.exports = (pluginContext) => {
   };
 
   const search = (query, res) => {
-    const queries = query.trim().toLowerCase().split(' ');
+    const queries = splitQuery(query);
 
+    // Handle empty query
     if (queries[0] === '') {
       return res.add([
         emptyQuery.preferences,
@@ -54,26 +63,30 @@ module.exports = (pluginContext) => {
 
     const hues = [];
     const results = [];
+    // Pop the last item in the query if it is a shade
     const queryShade = queries.length > 1 && shadePattern.test(queries[queries.length - 1]) ?
-                       queries.pop().toUpperCase() : '';
+      queries.pop().toUpperCase() : '';
 
+    // Cycle through all the colors and push the colors matching the given query to the results
     Object.keys(colors).forEach((hue) => {
       if (hasAllStartingWith(hue.split(colorSeparator), queries)) {
         hues.push(hue);
       }
     });
 
+    // Cycle through all the selected colors and push the shades matching the query to the results
     hues.forEach((hue) => {
       Object.keys(colors[hue]).forEach((shade) => {
         const colorValue = `${colorPrefix}${colors[hue][shade][colorType]}`;
 
+        // If the shade from the query is empty or matches current shade, push the shade to results
         if (queryShade === '' || shade.includes(queryShade)) {
           results.push({
             id: `${hue}${shade}`,
             payload: colorValue,
             title: shade,
             desc: colorValue,
-            icon: `http://www.beautycolorcode.com/${colors[hue][shade].hex}-48x48.png`,
+            icon: getColorImage(colors[hue][shade].hex),
             group: toTitleCase(hue),
           });
         }
@@ -85,17 +98,20 @@ module.exports = (pluginContext) => {
 
   const execute = (id, payload) => {
     switch (id) {
+      // Go to preferences page for this package
       case emptyQuery.preferences.id:
         app.openPreferences(packageName);
         break;
+      // Navigate to material design color guidelines website
       case emptyQuery.website.id:
         shell.openExternal(emptyQuery.website.desc);
         break;
+      // Copy color value to clipboard
       default:
         clipboard.writeText(payload);
         clipboard.readText().then(result => toast.enqueue(
-            result === payload ? `${result} copied to clipboard` : 'Unable to copy to clipboard',
-            1000));
+          result === payload ? `${result} copied to clipboard` : 'Unable to copy to clipboard',
+          1000));
         break;
     }
   };
